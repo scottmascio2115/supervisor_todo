@@ -1,6 +1,8 @@
 defmodule Todo.List do
   use GenServer
 
+  alias Todo.Cache
+
   def items(list) do
     GenServer.call(list, :items)
   end
@@ -23,7 +25,7 @@ defmodule Todo.List do
   end
 
   def init(name) do
-    state = %{name: name, items: []}
+    state = Cache.find(name) ||  %{name: name, items: []}
     {:ok, state}
   end
 
@@ -38,6 +40,7 @@ defmodule Todo.List do
 
   def handle_cast({:add, item}, state) do
     state = %{state | items: [item | state.items]}
+    Cache.save(state)
     {:noreply, state}
   end
 
@@ -45,6 +48,7 @@ defmodule Todo.List do
     index = Enum.find_index(state.items, &(&1.id == item.id))
     items = List.replace_at(state.items, index, item)
     state = %{state | items: items}
+    Cache.save(state)
 
     #no reply and store the new state
     {:noreply, state}
